@@ -1,0 +1,18 @@
+PRODUCT: xxxxxxxxxxxxxxxxx                               RELEASE: 17.5
+
+PROB #:	 1148        FN: T00001337    FT: xxx        DATE:    xx xxx xxxx 
+STARTRAK PRODUCT NAME: AXWBAS (Star Problem Product)
+
+PROBLEM SYMPTOM: 
+when select a transaction log in restore by session or restore by tree, two problems found: 
+1. sometimes some Transaction log sessions are selected even though its started time before Diff session selected.
+
+2. sometimes we found 'Full session' are not selected in 'restore by session'
+  
+
+
+PRE:
+PRE:
+REQ:
+REQ:
+SUP:
