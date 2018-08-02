@@ -17,11 +17,13 @@ NOTE: This works only in Arcserve internal env, since it need connect to interna
 
 
 prequisitions:
+
     1. you need copy APM to the same folder as the CreatePatchMT.py, and set the relative path accordingly in the file
 
     2. You also need a folder in the same directory with exact name of the fix (e.g. T00009527) containing the binaries included in the fix, also T00009527.txt for createpatch.exe to use. 
 
 usage:
+
 python CreatePatchMT.py T00009527 17.5.1
 
     T00009527: the fix name created in l2fix. 
