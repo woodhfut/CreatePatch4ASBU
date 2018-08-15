@@ -18,9 +18,25 @@ apm_version_path = {
 
 url = 'http://rmdm-bldvm-l901:8000/sign4dev.aspx'
 account = 'qiang.liu@arcserve.com'
-password ='------'
+password ='<password>'
 
+def isBinarySigned(bin):
+    cmd = 'sigcheck.exe ' + bin
+    ret = subprocess.run(cmd, stdout = subprocess.PIPE)
 
+    result = ret.stdout.decode('utf-8')
+    signed_output = 'Verified:\tSigned'
+    if signed_output in result:
+        return True
+    else:
+        return False
+
+'''
+def remove_readonly(func, path, _):
+    "Clear the readonly bit and reattempt the removal"
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+'''
 def createFix(fixname):    
     print('Start creating fix {}'.format(fixname))
 
@@ -41,7 +57,7 @@ def createFix(fixname):
         
         pool = ThreadPool(processes=len(files))
         for f in files:
-            if(not f.lower().endswith(fixname.lower() + '.exe') and not f.lower().endswith('.txt')):
+            if(not f.lower().endswith(fixname.lower() + '.exe') and not f.lower().endswith('.txt') and not isBinarySigned(f)):
                 print('trying to sign file '+f)
                 ar = pool.apply_async(signBinary,(f,))
                 results.append(ar)
@@ -51,7 +67,7 @@ def createFix(fixname):
         print('fix path {} doesnot exists...\nexit..'.format(fixpath))
         exit()
     
-    if all([x.get()[1] for x in results]):
+    if len(results) == 0 or all([x.get()[1] for x in results]):
         print('sign all binaries successfully.')
         print('Start create .caz file.')
         cazname = fixname + '.caz'
@@ -72,8 +88,9 @@ def createFix(fixname):
         print('copy {} to apm folder {}'.format(cazname, apm))
         shutil.move(cazname, os.path.join(apm, cazname))
 
-        if os.path.exists(os.path.join(apm,fixname)):
-            shutil.rmtree(os.path.join(apm, fixname))
+        if os.path.exists(os.path.join(apm,fixname)):    
+            #shutil.rmtree(os.path.join(apm, fixname), onerror=remove_readonly)
+            subprocess.run('cmd /c rd /S /Q ' + os.path.join(apm,fixname))
 
         print('start create {}.exe'.format(fixname))
         cmd = '{} -p {} {}'.format(createpatch, os.path.join(apm,cazname), fixname)
@@ -99,7 +116,6 @@ def createFix(fixname):
                 print('problem during sign binary{}... '.format(r[0]))
         print('quit the create patch process.')
         exit()
-
 
 def signBinary(bin):
     #bin is like T00009527\ntagent.dll.2003.2008.2008R2
@@ -196,6 +212,7 @@ def signBinary(bin):
     finally:
         if os.path.exists(temp_folder):
             shutil.rmtree(temp_folder)
+            
     return (temp_folder, result)
 
 if __name__ == '__main__':
