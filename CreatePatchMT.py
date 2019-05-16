@@ -7,6 +7,7 @@ from requests_ntlm import HttpNtlmAuth
 from multiprocessing.pool import ThreadPool
 import sys
 import argparse
+import stat
 
 apm_version_path = {
     '16.5.1' : r'APM\APMr16.5sp1\build7003',
@@ -18,7 +19,7 @@ apm_version_path = {
 
 url = 'http://rmdm-bldvm-l901:8000/sign4dev.aspx'
 account = 'qiang.liu@arcserve.com'
-password ='<password>'
+password ='your_password'
 
 def isBinarySigned(bin):
     cmd = 'sigcheck.exe ' + bin
@@ -117,12 +118,23 @@ def createFix(fixname):
         print('quit the create patch process.')
         exit()
 
-def signBinary(bin):
+def getRealBinaryName(binname):
     #bin is like T00009527\ntagent.dll.2003.2008.2008R2
+    #or T00009527\CA.ARCserve.CommunicationFoundation.Impl.dll.gdb
+    #or T00009527\tree.dll
+    binname = binname.split('\\')[1]
+    idx = binname.lower().find('.dll')
+    if idx == -1:
+        idx = binname.lower().find('.exe')
+        if idx == -1:
+            raise Exception('not supported binary: {}'.format(binname))
+    
+    return binname[0:idx+4]
+
+def signBinary(bin):
+    
     result = False
-    binname_ext = bin.split('\\')[1]
-    names = binname_ext.split('.')
-    binname = names[0] + '.' + names[1]
+    binname = getRealBinaryName(bin)
     temp_folder = bin.replace('\\','_')
     
     print('copy and rename binary {}.'.format(bin))
@@ -215,6 +227,14 @@ def signBinary(bin):
             
     return (temp_folder, result)
 
+def cleanup(apm, fixname):
+    try:
+        patchpath = os.path.join(apm, fixname)
+        print('cleanup {}'.format(patchpath))
+        shutil.rmtree(patchpath, ignore_errors=True)
+    except Exception as ex:
+        print("error occurred while cleanup: {}".format(ex))
+
 if __name__ == '__main__':
     '''
     usage:
@@ -237,4 +257,4 @@ if __name__ == '__main__':
     cazipxp = os.path.join(apm, 'cazipxp.exe')
     createpatch = os.path.join(apm, 'CreatePatch.exe')
     createFix(args.fixname)
-    #signBinary('T00001201\\ntagent.dll.2003.2008.2008R2')
+    cleanup(apm, args.fixname)
